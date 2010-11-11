@@ -1,0 +1,6 @@
+; $Id$
+name = Domain Access Override
+description = Allows overriding nodes of selected content types on a per-domain basis.
+package = Domain Access
+core = 6.x
+dependencies[] = domain
