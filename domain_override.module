@@ -24,12 +24,14 @@ function domain_override_help($path, $arg) {
  */
 function domain_override_perm() {
   $perms = array(
-    'administer domain_override',
-    'override any node',
+    'administer domain override',
+    'override any content',
   );
 
-  // Build 'override foo nodes' perm per content-type
-
+  // Build an override permission per content type
+  foreach (array_keys(node_get_types('names')) as $content_type) {
+    $perms[] = "override $content_type content";
+  }
   return $perms;
 }
 
