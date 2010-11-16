@@ -42,6 +42,15 @@ function domain_override_menu() {
   $items = array();
 
   // Administration page
+  $items['admin/build/domain/override'] = array(
+    'title' => 'Override settings',
+    'description' => 'Configure which content types can be overridden per domain',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('domain_override_settings_form'),
+    'access arguments' => array('administer domain override'),
+    'file' => 'domain_override.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
 
   // 'Override' node tab
 
@@ -52,7 +61,21 @@ function domain_override_menu() {
  * Access callback for 'Override' node tab.
  */
 function domain_override_override_access() {
-  // TODO
   return TRUE;
+}
+
+/**
+ * Determines which content types are currently enabled for overridability.
+ * @return
+ *   array suitable for a checkboxes form element's options.
+ */
+function _domain_override_overridable_types() {
+  $overridable = array();
+  foreach (array_keys(node_get_types('names')) as $type) {
+    if (variable_get('domain_override_type_'. $type, FALSE)) {
+      $overridable[] = $type;
+    }
+  }
+  return $overridable;
 }
 
