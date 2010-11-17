@@ -3,7 +3,7 @@
 
 /**
  * @file
- * Module functions for Domain Access Override.
+ * Module functions for Domain Override.
  */
 
 /**
@@ -12,8 +12,7 @@
 function domain_override_help($path, $arg) {
   switch ($path) {
     case 'admin/help#domain_override':
-      // TODO
-      $help = t('Domain override help');
+      $help = t('Domain Override allows overriding nodes for a specific domain. For instance, say you have an "About Us" page with company details, and that page is set to "Publish to all affiliates." Now, a site editor for your engineering subdomain thinks that page\'s content should be different when viewed on the engineering subdomain -- he wants to essentially "override" the node for the engineering subdomain. Once given proper permissions, he can click the "Override" tab on the node page; Domain Override will create a copy of the node and modify the domain settings for the original node to exclude the engineering subdomain. It will also assign <em>only</em> the engineering subdomain to the new copy of the node (the override). The engineering editor will then be sent directly to the edit page for the new copy of the "About Us" node that is published only on his domain.');
       break;
   }
   return '<p>'. $help .'</p>';
