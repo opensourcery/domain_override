@@ -72,8 +72,13 @@ function domain_override_menu() {
  */
 function domain_override_override_access($node) {
   $type = $node->type;
-  return user_access("create $type content") &&
-    (user_access("override $type content") || user_access('override any content'));
+  $access =
+    (user_access("override $type content") || user_access('override any content')) &&
+    node_access('view', $node) && node_access('create', $type) &&
+    filter_access($node->format);
+  // Allow other modules to alter $access
+  drupal_alter('domain_override_access', $access, $node);
+  return $access;
 }
 
 /**
