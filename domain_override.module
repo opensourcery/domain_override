@@ -77,7 +77,7 @@ function domain_override_override_access($node) {
   // (or published to all domains via $node->domain_site).
   // Otherwise, overriding it on current domain doesn't make sense.
   $access =
-    ($node->domain_site || (isset($node->domains[$_domain->domain_id]) && count($node->domains) > 1)) &&
+    ($node->domain_site || (isset($node->domains[$_domain['domain_id']]) && count($node->domains) > 1)) &&
     (user_access("override $type content") || user_access('override any content')) &&
     node_access('view', $node) && node_access('create', $type) &&
     filter_access($node->format);
