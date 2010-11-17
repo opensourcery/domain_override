@@ -71,11 +71,18 @@ function domain_override_menu() {
  * Access callback for 'Override' node tab.
  */
 function domain_override_override_access($node) {
+  global $_domain;
   $type = $node->type;
+
+  // Node must be published to current domain and at least one other domain
+  // (or published to all domains via $node->domain_site).
+  // Otherwise, overriding it on current domain doesn't make sense.
   $access =
+    ($node->domain_site || (isset($node->domains[$_domain->domain_id]) && count($node->domains) > 1)) &&
     (user_access("override $type content") || user_access('override any content')) &&
     node_access('view', $node) && node_access('create', $type) &&
     filter_access($node->format);
+
   // Allow other modules to alter $access
   drupal_alter('domain_override_access', $access, $node);
   return $access;
@@ -85,7 +92,51 @@ function domain_override_override_access($node) {
  * Page callback for node/%node/override.
  */
 function domain_override_override_page($node) {
-  drupal_goto("node/add/{$node->type}", array('override_nid' => $node->nid));
+  global $_domain, $user;
+
+  assert($node->domain_site || isset($node->domains[$_domain->domain_id]));
+  // If node was published to all affiliates, we must make sure the individual
+  // domains are all listed in $node->domains and remove "unpublish for all"
+  if ($node->domain_site) {
+    $node->domains = drupal_map_assoc(array_keys(domain_domains()));
+    $node->domain_site = FALSE;
+
+    // we just rebuilt domains list, and id 0 (main domain) must be stored as
+    // -1 there.
+    if (isset($node->domains[0])) {
+      unset($node->domains[0]);
+      $node->domains[-1] = -1;
+    }
+  }
+
+  // Unpublish $node for the current domain
+  unset($node->domains[$_domain['domain_id']]);
+  node_save($node);
+
+  // Clone the node (with inspiration from the node_clone project)
+  $original_node = drupal_clone($node);
+  $node->nid = NULL;
+  $node->vid = NULL;
+  $node->tnid = NULL;
+  $node->name = $user->name;
+  $node->uid = $user->uid;
+  $node->created = NULL;
+  $node->menu = NULL;
+  $node->book['mlid'] = NULL;
+  $node->path = NULL;
+  $node->files = array();
+  $node->title = t('Override for !domain: !title', array('!title' => $node->title, '!domain' => $_domain['subdomain']));
+
+  // new node should be accessible to just one domain
+  $node->domains = array($_domain['domain_id'] => $_domain['domain_id']);
+  $node->domain_site = FALSE; // All affiliates? No.
+  $node->subdomains = array($_domain['domain_id'] => $_domain['subdomain']);
+
+  // Allow other modules to alter the new node
+  drupal_alter('domain_override_node', $node, $original_node);
+  node_save($node);
+
+  drupal_goto("node/{$node->nid}/edit");
 }
 
 /**
