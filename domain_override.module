@@ -129,7 +129,7 @@ function domain_override_override_page($node) {
   // new node should be accessible to just one domain
   $node->domains = array($_domain['domain_id'] => $_domain['domain_id']);
   $node->domain_site = FALSE; // All affiliates? No.
-  $node->subdomains = array($_domain['domain_id'] => $_domain['subdomain']);
+  $node->subdomains = array($_domain['domain_id'] => $_domain['sitename']);
 
   // Allow other modules to alter the new node
   drupal_alter('domain_override_node', $node, $original_node);
