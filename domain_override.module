@@ -76,7 +76,7 @@ function domain_override_override_access($node) {
   // Node must be published to current domain and at least one other domain
   // (or published to all domains via $node->domain_site).
   // Otherwise, overriding it on current domain doesn't make sense.
-  $access =
+  $access = in_array($type, _domain_override_overridable_types()) &&
     ($node->domain_site || (isset($node->domains[$_domain['domain_id']]) && count($node->domains) > 1)) &&
     (user_access("override $type content") || user_access('override any content')) &&
     node_access('view', $node) && node_access('create', $type) &&
