@@ -93,7 +93,7 @@ function domain_override_override_access($node) {
 function domain_override_override_page($node) {
   global $_domain, $user;
 
-  assert($node->domain_site || isset($node->domains[$_domain->domain_id]));
+  assert($node->domain_site || isset($node->domains[$_domain['domain_id']]));
   // If node was published to all affiliates, we must make sure the individual
   // domains are all listed in $node->domains and remove "unpublish for all"
   if ($node->domain_site) {
