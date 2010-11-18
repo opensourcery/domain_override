@@ -41,7 +41,6 @@ NOTES
 
 TROUBLESHOOTING
 ---------------
-
 ==> Error message "Fatal error: Cannot redeclare custom_url_rewrite_inbound()"
 Problem:  There's already a module installed that provides the custom_url_rewrite_inbound() function.
 Solution: Install the url_alter module.
@@ -50,5 +49,5 @@ This problem may also manifest as a WSOD (white screen of death).
 
 AUTHOR
 ------
-adamdicarlo - http://drupal.org/user/100783.
+The **Domain Override** module is developed and maintained by [OpenSourcery](http://opensourcery.com).
 
