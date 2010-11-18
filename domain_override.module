@@ -109,6 +109,8 @@ function domain_override_override_page($node) {
   $node->files = array();
   $node->title = t('Override for !domain: !title', array('!title' => $node->title, '!domain' => $_domain['subdomain']));
 
+  // TODO: Copy translations of original node, too
+
   // new node should be accessible to just one domain
   $node->domains = array($_domain['domain_id'] => $_domain['domain_id']);
   $node->domain_site = FALSE; // All affiliates? No.
@@ -165,33 +167,10 @@ function domain_override_url_inbound_alter(&$result, $path, $path_language) {
 }
 
 /**
- * Implementation of hook_form_FORM_ID_alter().
- */
-function domain_override_form_alter(&$form, &$form_state) {
-  // We must be on a node-add form (not node edit form) of an override-enabled content type
-  // we must have gotten a valid nid in GET param, and that node must be same type.
-  if (isset($form['type']) && isset($form['#node']) && is_null($form['nid']['#value']) &&
-      isset($_GET['override_nid']) && is_numeric($_GET['override_nid']) &&
-      in_array($form['type']['#value'], _domain_override_overridable_types()) &&
-      ($source_node = node_load((int)$_GET['override_nid'])) && $source_node->type == $form['type']['#value']) {
-
-    //dpm($form);
-
-  }
-}
-
-/**
  * Implementation of hook_nodeapi().
  */
 function domain_override_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
-  global $_domain;
-  //dpm(array('$node'=>$node,'$op'=>$op,'$a3'=>$a3,'$a4'=>$a4,'$_GET'=>$_GET));
-  //dpm(array('domain'=>$_domain));
   switch ($op) {
-    case 'presave':
-      break;
-    case 'insert':
-      break;
     case 'delete':
       // If it was an override of some other node, forget that override.
       db_query('DELETE FROM {domain_override} WHERE nid_override = %d', $node->nid);
