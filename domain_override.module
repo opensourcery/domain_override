@@ -93,24 +93,7 @@ function domain_override_override_access($node) {
 function domain_override_override_page($node) {
   global $_domain, $user;
 
-  assert($node->domain_site || isset($node->domains[$_domain['domain_id']]));
-  // If node was published to all affiliates, we must make sure the individual
-  // domains are all listed in $node->domains and remove "unpublish for all"
-  if ($node->domain_site) {
-    $node->domains = drupal_map_assoc(array_keys(domain_domains()));
-    $node->domain_site = FALSE;
-
-    // we just rebuilt domains list, and id 0 (main domain) must be stored as
-    // -1 there.
-    if (isset($node->domains[0])) {
-      unset($node->domains[0]);
-      $node->domains[-1] = -1;
-    }
-  }
-
-  // Unpublish $node for the current domain
-  unset($node->domains[$_domain['domain_id']]);
-  node_save($node);
+  _domain_override_unpublish_domain($node, $_domain['domain_id']);
 
   // Clone the node (with inspiration from the node_clone project)
   $original_node = drupal_clone($node);
@@ -183,5 +166,30 @@ function _domain_override_overridable_types() {
     }
   }
   return $overridable;
+}
+
+/**
+ * Unpublishes a node from the given domain.
+ */
+function _domain_override_unpublish_domain($node, $domain_id) {
+  assert($node->domain_site || isset($node->domains[$domain_id]));
+
+  // If node was published to all affiliates, we must make sure the individual
+  // domains are all listed in $node->domains and remove "publish for all"
+  if ($node->domain_site) {
+    $node->domains = drupal_map_assoc(array_keys(domain_domains()));
+    $node->domain_site = FALSE;
+
+    // we just rebuilt domains list, and id 0 (main domain) must be stored as
+    // -1 there.
+    if (isset($node->domains[0])) {
+      unset($node->domains[0]);
+      $node->domains[-1] = -1;
+    }
+  }
+
+  // Unpublish $node from the given domain
+  unset($node->domains[$domain_id]);
+  node_save($node);
 }
 
