@@ -118,7 +118,50 @@ function domain_override_override_page($node) {
   drupal_alter('domain_override_node', $node, $original_node);
   node_save($node);
 
+  // Keep track of the override
+  $domain_override = new stdClass;
+  $domain_override->nid = $original_node->nid;
+  $domain_override->nid_override = $node->nid;
+  $domain_override->domain_id = $_domain['domain_id'];
+  drupal_write_record('domain_override', $domain_override);
+
+  // Send user to edit their new node
   drupal_goto("node/{$node->nid}/edit");
+}
+
+// Define the custom_url_rewrite_inbound() function if not already defined.
+// If it already exists, hopefully it's because url_alter module is installed.
+// That module will call our hook_url_inbound_alter.
+if (!function_exists('custom_url_rewrite_inbound')) {
+  function custom_url_rewrite_inbound(&$path, &$options, $original_path) {
+    domain_override_url_inbound_alter($path, $options, $original_path);
+  }
+}
+
+/**
+ * Implementation of hook_url_inbound_alter().
+ */
+function domain_override_url_inbound_alter(&$result, $path, $path_language) {
+  // exit as quickly if possible if we're not on a node/% path.
+  $parts = explode('/', $result);
+  if ($parts[0] != 'node' || !is_numeric($parts[1])) {
+    return;
+  }
+
+  // domain module hasn't initialized value in domain_initial_domain() yet;
+  // don't use it.
+  global $_domain;
+
+  $nid = (int)$parts[1];
+
+  // Look up the override for this domain
+  $nid_override = db_result(db_query('SELECT nid_override FROM {domain_override} WHERE nid = %d AND domain_id = %d',
+    array(':nid' => $nid, ':domain_id' => $_domain['domain_id'])));
+
+  if ($nid_override) {
+    $parts[1] = $nid_override;
+    $result = implode('/', $parts);
+  }
 }
 
 /**
@@ -147,8 +190,11 @@ function domain_override_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
   switch ($op) {
     case 'presave':
       break;
-
-    case 'save':
+    case 'insert':
+      break;
+    case 'delete':
+      // If it was an override of some other node, forget that override.
+      db_query('DELETE FROM {domain_override} WHERE nid_override = %d', $node->nid);
       break;
   }
 }

@@ -1,0 +1,58 @@
+<?php
+
+/**
+ * @file
+ * Installation for domain_override.
+ */
+
+/**
+ * Implementation of hook_install().
+ */
+function domain_override_install() {
+  drupal_install_schema('domain_override');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function domain_override_uninstall() {
+  // TODO: Remove variables
+
+  // TODO: Remove menu items' ['options']['domain_override'] ?
+
+  drupal_uninstall_schema('domain_override');
+}
+
+/**
+ * Implementation of hook_schema().
+ */
+function domain_override_schema() {
+  $schema['domain_override'] = array(
+    'description' => 'Tracks node-domain overrides',
+    'fields' => array(
+      'nid' => array(
+        'description' => 'Node ID of node that has been overridden',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'domain_id' => array(
+        'description' => 'Domain on which nid has been overridden',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'nid_override' => array(
+        'description' => 'Node ID of overridden version of nid',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+    ),
+    'unique keys' => array(
+      'nid_override' => array('nid_override'),
+    ),
+    'primary_key' => array('nid', 'domain_id'),
+  );
+  return $schema;
+}
