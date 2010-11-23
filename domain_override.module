@@ -150,20 +150,31 @@ function domain_override_url_inbound_alter(&$result, $path, $path_language) {
     return;
   }
 
-  // domain module hasn't initialized value in domain_initial_domain() yet;
-  // don't use it.
-  global $_domain;
-
   $nid = (int)$parts[1];
 
   // Look up the override for this domain
-  $nid_override = db_result(db_query('SELECT nid_override FROM {domain_override} WHERE nid = %d AND domain_id = %d',
-    array(':nid' => $nid, ':domain_id' => $_domain['domain_id'])));
-
-  if ($nid_override) {
+  $nid_override = domain_override_nid_override($nid);
+  if ($nid_override != $nid) {
     $parts[1] = $nid_override;
     $result = implode('/', $parts);
   }
+}
+
+/**
+ * Finds the override for the given node id.
+ * @param $nid
+ *   Node ID to check for overrides
+ * @return
+ *   Original nid, or the nid that applies for the current domain.
+ */
+function domain_override_nid_override($nid) {
+  // domain module might not have initialized value in domain_initial_domain()
+  // yet, so don't use it.
+  global $_domain;
+
+  $nid_override = db_result(db_query('SELECT nid_override FROM {domain_override} WHERE nid = %d AND domain_id = %d',
+    array(':nid' => $nid, ':domain_id' => $_domain['domain_id'])));
+  return $nid_override ? $nid_override : $nid;
 }
 
 /**
