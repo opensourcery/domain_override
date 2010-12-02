@@ -268,7 +268,6 @@ function _domain_override_copy_translations($original_node, $node, $domain_id) {
 
     // translation_node_get_translations() gives partial nodes; load the rest.
     $translation_node = node_load($translation_node->nid);
-    dpm(array('translation_node'=>$translation_node,'orig'=>$original_node,'node'=>$node));
 
     // Only copy/override translations that are published to the target domain.
     if (!($translation_node->domain_site || in_array($domain_id, $translation_node->domains))) {
@@ -288,7 +287,6 @@ function _domain_override_copy_translations($original_node, $node, $domain_id) {
     $translation_node->path = NULL;
     _domain_override_set_single_domain($translation_node, $domain_id);
     node_save($translation_node);
-    dpm(array('new node!'=>$translation_node->nid));
   }
 }
 
