@@ -109,16 +109,15 @@ function domain_override_override_page($node) {
   $node->files = array();
   $node->title = t('Override for !domain: !title', array('!title' => $node->title, '!domain' => $_domain['subdomain']));
 
-  // TODO: Copy translations of original node, too
-
   // new node should be accessible to just one domain
-  $node->domains = array($_domain['domain_id'] => $_domain['domain_id']);
-  $node->domain_site = FALSE; // All affiliates? No.
-  $node->subdomains = array($_domain['domain_id'] => $_domain['sitename']);
+  _domain_override_set_single_domain($node, $_domain['domain_id']);
 
   // Allow other modules to alter the new node
   drupal_alter('domain_override_node', $node, $original_node);
   node_save($node);
+
+  // Copy/override translations of original node, too
+  _domain_override_copy_translations($original_node, $node, $_domain['domain_id']);
 
   // Keep track of the override
   $domain_override = new stdClass;
@@ -144,7 +143,7 @@ if (!function_exists('custom_url_rewrite_inbound')) {
  * Implementation of hook_url_inbound_alter().
  */
 function domain_override_url_inbound_alter(&$result, $path, $path_language) {
-  // exit as quickly if possible if we're not on a node/% path.
+  // exit as quickly as possible if we're not on a node/% path.
   $parts = explode('/', $result);
   if ($parts[0] != 'node' || !is_numeric($parts[1])) {
     return;
@@ -162,12 +161,15 @@ function domain_override_url_inbound_alter(&$result, $path, $path_language) {
 
 /**
  * Finds the override for the given node id.
+ *
  * @param $nid
  *   Node ID to check for overrides
  * @return
  *   Original nid, or the nid that applies for the current domain.
  */
 function domain_override_nid_override($nid) {
+  assert(is_numeric($nid));
+
   // domain module might not have initialized value in domain_initial_domain()
   // yet, so don't use it.
   global $_domain;
@@ -191,6 +193,7 @@ function domain_override_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
 
 /**
  * Determines which content types are currently enabled for overridability.
+ *
  * @return
  *   array suitable for a checkboxes form element's options.
  */
@@ -206,8 +209,13 @@ function _domain_override_overridable_types() {
 
 /**
  * Unpublishes a node from the given domain.
+ *
+ * @param $node
+ *   Node object of node to unpublish.
+ * @param $domain_id
+ *   Numerical domain id of the domain from which to unpublish the node.
  */
-function _domain_override_unpublish_domain($node, $domain_id) {
+function _domain_override_unpublish_domain(&$node, $domain_id) {
   assert($node->domain_site || isset($node->domains[$domain_id]));
 
   // If node was published to all affiliates, we must make sure the individual
@@ -227,5 +235,80 @@ function _domain_override_unpublish_domain($node, $domain_id) {
   // Unpublish $node from the given domain
   unset($node->domains[$domain_id]);
   node_save($node);
+}
+
+/**
+ * Copies and domain-overrides translations of $original_node as
+ * translations of $node. Copies only translations that are currently published
+ * to the target domain.
+ *
+ * @param $original_node
+ *   Node object of source node; its translations should be copied.
+ * @param $node
+ *   Node object of "target" node; the new translations will be marked as
+ *   translations of this node.
+ * @param $domain_id
+ *   Numerical domain id of the domain to which the new translation nodes should
+ *   be published.
+ */
+function _domain_override_copy_translations($original_node, $node, $domain_id) {
+  assert(is_object($original_node) && is_object($node));
+  assert(is_numeric($domain_id));
+
+  if (!module_exists('translation')) {
+    return;
+  }
+
+  $translations = translation_node_get_translations($original_node->nid);
+  foreach ($translations as $translation_node) {
+    // Original node is listed as a translation of itself; skip it.
+    if ($translation_node->nid == $original_node->nid) {
+      continue;
+    }
+
+    // translation_node_get_translations() gives partial nodes; load the rest.
+    $translation_node = node_load($translation_node->nid);
+    dpm(array('translation_node'=>$translation_node,'orig'=>$original_node,'node'=>$node));
+
+    // Only copy/override translations that are published to the target domain.
+    if (!($translation_node->domain_site || in_array($domain_id, $translation_node->domains))) {
+      continue;
+    }
+
+    // unpublish this translation from $node's domain
+    _domain_override_unpublish_domain($translation_node, $domain_id);
+
+    // copy the translation, using $node's domain publishing settings
+    $translation_node->nid = NULL;
+    $translation_node->vid = NULL;
+    $translation_node->tnid = $node->nid;
+    $translation_node->created = NULL;
+    $translation_node->book['mlid'] = NULL;
+    $translation_node->files = array();
+    $translation_node->path = NULL;
+    _domain_override_set_single_domain($translation_node, $domain_id);
+    node_save($translation_node);
+    dpm(array('new node!'=>$translation_node->nid));
+  }
+}
+
+/**
+ * Sets a node to be published on only one domain.
+ *
+ * @param $node
+ *   Node for which to set publishing domain.
+ * @param $domain_id
+ *   Target domain (numeric id) to set as the node published domain.
+ */
+function _domain_override_set_single_domain(&$node, $domain_id) {
+  assert(is_object($node));
+
+  // gather domains so we can look up target domain's sitename
+  $domains = domain_domains();
+  assert(is_array($domains[$domain_id]));
+
+  $node->domains = array($domain_id => $domain_id);
+  $node->domain_site = FALSE; // All affiliates? No.
+  $node->subdomains = array($domain_id => $domains[$domain_id]['sitename']);
 }
 
