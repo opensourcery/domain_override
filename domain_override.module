@@ -112,12 +112,18 @@ function domain_override_override_page($node) {
   // new node should be accessible to just one domain
   _domain_override_set_single_domain($node, $_domain['domain_id']);
 
-  // Allow other modules to alter the new node
-  drupal_alter('domain_override_node', $node, $original_node);
+  // save the node the first time
   node_save($node);
 
   // Copy/override translations of original node, too
-  _domain_override_copy_translations($original_node, $node, $_domain['domain_id']);
+  if (_domain_override_copy_translations($original_node, $node, $_domain['domain_id']) > 0) {
+    // We have at least one translation, so we must set source node's tnid
+    $node->tnid = $node->nid;
+  }
+
+  // Allow other modules to alter the finalized new node, and save again.
+  drupal_alter('domain_override_node', $node, $original_node);
+  node_save($node);
 
   // Keep track of the override
   $domain_override = new stdClass;
@@ -250,15 +256,18 @@ function _domain_override_unpublish_domain(&$node, $domain_id) {
  * @param $domain_id
  *   Numerical domain id of the domain to which the new translation nodes should
  *   be published.
+ * @return
+ *   The number of translations that were copied.
  */
 function _domain_override_copy_translations($original_node, $node, $domain_id) {
   assert(is_object($original_node) && is_object($node));
   assert(is_numeric($domain_id));
 
   if (!module_exists('translation')) {
-    return;
+    return 0;
   }
 
+  $translations_copied = 0;
   $translations = translation_node_get_translations($original_node->nid);
   foreach ($translations as $translation_node) {
     // Original node is listed as a translation of itself; skip it.
@@ -287,7 +296,9 @@ function _domain_override_copy_translations($original_node, $node, $domain_id) {
     $translation_node->path = NULL;
     _domain_override_set_single_domain($translation_node, $domain_id);
     node_save($translation_node);
+    $translations_copied++;
   }
+  return $translations_copied;
 }
 
 /**
