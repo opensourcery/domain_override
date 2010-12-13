@@ -19,8 +19,6 @@ function domain_override_install() {
 function domain_override_uninstall() {
   // TODO: Remove variables
 
-  // TODO: Remove menu items' ['options']['domain_override'] ?
-
   drupal_uninstall_schema('domain_override');
 }
 
