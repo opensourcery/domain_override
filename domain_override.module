@@ -95,6 +95,11 @@ function domain_override_override_page($node) {
 
   _domain_override_unpublish_domain($node, $_domain['domain_id']);
 
+  // Load the node's menu entry using node_object_prepare() so we can have a
+  // new, identical menu link created for the override node.
+  module_load_include('inc', 'node', 'node.pages');
+  node_object_prepare($node);
+
   // Clone the node (with inspiration from the node_clone project)
   $original_node = drupal_clone($node);
   $node->nid = NULL;
@@ -103,7 +108,7 @@ function domain_override_override_page($node) {
   $node->name = $user->name;
   $node->uid = $user->uid;
   $node->created = NULL;
-  $node->menu = NULL;
+  $node->menu['mlid'] = NULL; // create new menu link
   $node->book['mlid'] = NULL;
   $node->path = NULL;
   $node->files = array();
